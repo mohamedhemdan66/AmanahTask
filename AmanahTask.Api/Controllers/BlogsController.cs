@@ -1,165 +1,103 @@
 ﻿using AmanahTask.Api.DTOs;
-using AmanahTask.Core;
 using AmanahTask.Core.Constants;
 using AmanahTask.Core.Domain;
+using AmanahTask.Core.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System;
-using Newtonsoft.Json;
-using System.IO;
 
-namespace AmanahTask.Api.Controllers.APIs
+namespace AmanahTask.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class BlogsController : ControllerBase
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IBlogRepository _blogRepo;
         private readonly IMapper _mapper;
 
-        public BlogsController(IUnitOfWork unitOfWork, IMapper mapper)
+        public BlogsController(IBlogRepository blogRepo, IMapper mapper)
         {
-            this._unitOfWork = unitOfWork;
+            this._blogRepo = blogRepo;
             this._mapper = mapper;
         }
 
         /// <summary>
-        /// Service to Get Add Blogs
+        ///  Get All Blogs
         /// </summary>
         /// <returns></returns>
         [HttpGet("GetAllBlogs")]
         public async Task<IActionResult> GetAllBlogs()
         {
-            try
-            {
-                IEnumerable<Blog> blogs = await _unitOfWork.Blogs.GetAllAsync();
-                IEnumerable<BlogDto> blogsDto = _mapper.Map<IEnumerable<BlogDto>>(blogs);
-                return Ok(blogsDto);
-            }
-            catch (Exception ex)
-            {
-                System.IO.File.AppendAllText(@"C:\log.txt", $"Error Message: {ex.Message} - Time: {DateTime.Now}\n");
-                return BadRequest(ex.Message);
-            }
+
+            var blogs = await _blogRepo.GetAllAsync();
+            var data = _mapper.Map<IEnumerable<BlogDto>>(blogs);
+            return Ok(data); 
         }
 
         /// <summary>
-        /// Service to Get All blogs sorted by recent creation date 
+        /// Get All Blogs Orderd recently by creationDate
         /// </summary>
         /// <returns></returns>
-        [HttpGet("GetAllBlogsOrderedByDate")]
-        public async Task<IActionResult> GetAllBlogsOrderedByDate() 
+        [HttpGet("GetAllBlogsOrderd")]
+        public async Task<IActionResult> GetAllBlogsOrderd()
         {
-            try
-            {
-                IEnumerable<Blog> blogs = await _unitOfWork.Blogs.FindAllAsync( b => true, a=>a.CreationDate,OrderBy.Descending);
-                IEnumerable<BlogDto> blogsDto = _mapper.Map<IEnumerable<BlogDto>>(blogs);
-                return Ok(blogsDto);
-            }
-            catch (Exception ex)
-            {
-                System.IO.File.AppendAllText(@"C:\log.txt", $"Error Message: {ex.Message} - Time: {DateTime.Now}\n");
-                return BadRequest(ex.Message);
-            }
+            var blogs = await _blogRepo.GetAllAsync( b=>b.CreationDate, OrderBy.Descending);
+            var data = _mapper.Map<IEnumerable<BlogDto>>(blogs);
+            return Ok(data);
         }
 
         /// <summary>
-        /// Service to Get One Blog by id
+        /// Get Blog ById
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpGet("GetBlogById")]
+        [HttpGet("GetBlogById/{id}")]
         public async Task<IActionResult> GetBlogById(int id)
         {
-            try
-            {
-                Blog blog = await _unitOfWork.Blogs.GetByIdAsync(id);
-                BlogDto blogDto = _mapper.Map<BlogDto>(blog);
-                return Ok(blogDto);
-            }
-            catch (Exception ex)
-            {
-                System.IO.File.AppendAllText(@"C:\log.txt", $"Error Message: {ex.Message} - Time: {DateTime.Now}\n");
-                return BadRequest(ex.Message);
-            }
+            var blog = await _blogRepo.GetByIdAsync(id);
+            if (blog == null)
+                NotFound();
+
+            var data = _mapper.Map<BlogDto>(blog);
+            return Ok(data);
         }
 
         /// <summary>
-        /// To add one Blog
+        /// Create Blog
         /// </summary>
-        /// <param name="blogDto"></param>
+        /// <param name="blog"></param>
         /// <returns></returns>
-        [HttpPost("AddBlog")]
-        public async Task<IActionResult> AddBlog(BlogDto blogDto)
+        [HttpPost("Create")]
+        public async Task<IActionResult> Create(BlogDto blog) 
         {
-            try
-            {
-                if (blogDto == null)
-                    return BadRequest();
-
-                Blog blog = _mapper.Map<Blog>(blogDto);
-                var entity = await _unitOfWork.Blogs.AddAsync(blog);
-                _unitOfWork.Save();
-                return Ok(entity);
-            }
-            catch (Exception ex)
-            {
-                System.IO.File.AppendAllText(@"C:\log.txt", $"Error Message: {ex.Message} - Time: {DateTime.Now}\n");
-                return BadRequest(ex.Message);
-            }
+            var entity = _mapper.Map<Blog>(blog);
+            return Ok(await _blogRepo.AddAsync(entity));
         }
 
         /// <summary>
-        /// To update/edit Blog
+        /// Update Blog
         /// </summary>
-        /// <param name="blogDto"></param>
+        /// <param name="blog"></param>
         /// <returns></returns>
-        [HttpPut("UpdateBlog")]
-        public IActionResult UpdateBlog(BlogDto blogDto)
+        [HttpPut("Update")]
+        public IActionResult Update(BlogDto blog)
         {
-            try
-            {
-                if (blogDto == null)
-                    return BadRequest();
-
-                // also you can check on all properties in your model by using ModelState.
-                //if (!ModelState.IsValid)
-                //    return BadRequest();
-
-                Blog blog = _mapper.Map<Blog>(blogDto);
-                var entity = _unitOfWork.Blogs.Update(blog);
-                _unitOfWork.Save();
-                return Ok(entity);
-            }
-            catch (Exception ex)
-            {
-                System.IO.File.AppendAllText(@"C:\log.txt", $"Error Message: {ex.Message} - Time: {DateTime.Now}\n");
-                return BadRequest(ex.Message);
-            }
+            var entity = _mapper.Map<Blog>(blog);
+            return Ok(_blogRepo.Update(entity));
         }
 
         /// <summary>
-        /// To Delete One Blog by Id
+        /// Delete by id 
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpDelete("DeleteBlog")]
-        public IActionResult DeleteBlog(int id)
+        [HttpDelete("Delete/{id}")]
+        public IActionResult Delete(int id)
         {
-            try
-            {
-                Blog blog = _unitOfWork.Blogs.Delete(id);
-                _unitOfWork.Save();
-                return Ok(blog);
-            }
-            catch (Exception ex)
-            {
-                System.IO.File.AppendAllText(@"C:\log.txt", $"Error Message: {ex.Message} - Time: {DateTime.Now}\n");
-                return BadRequest(ex.Message);
-            }
+            return Ok(_blogRepo.Delete(id));
         }
+
     }
 }

@@ -15,6 +15,5 @@ namespace AmanahTask.EF
         }
 
         public DbSet<Blog> Blogs { get; set; }
-        public DbSet<Author> Authors { get; set; } 
     }
 }

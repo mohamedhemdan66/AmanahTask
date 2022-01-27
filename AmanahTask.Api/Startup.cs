@@ -1,4 +1,5 @@
 using AmanahTask.Core;
+using AmanahTask.Core.Interfaces;
 using AmanahTask.EF;
 using AmanahTask.EF.Repositories;
 using Microsoft.AspNetCore.Builder;
@@ -36,7 +37,8 @@ namespace AmanahTask.Api
 
 
 
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IBlogRepository, BlogRepository>();
+            services.AddScoped<ILogService, LogService>();
 
             services.AddAutoMapper(typeof(Startup));
 

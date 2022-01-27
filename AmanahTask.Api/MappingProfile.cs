@@ -8,8 +8,8 @@ namespace AmanahTask
     {
         public MappingProfile()
         {
-            CreateMap<BlogDto,Blog>()
-                .ForMember(dest => dest.Author, op => op.Ignore()).ReverseMap();
+            CreateMap<BlogDto,Blog>().ReverseMap();
+
         }
     }
 
